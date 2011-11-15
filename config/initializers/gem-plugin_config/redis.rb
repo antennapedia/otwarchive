@@ -10,8 +10,7 @@ if rails_env == "test"
 end
 
 redis_config = YAML.load_file(rails_root + '/config/redis.yml')
-redis_host, redis_port = redis_config[rails_env].split(":")
-$redis = Redis.new(:host => redis_host, :port => redis_port)
+$redis = Redis.new(redis_config[rails_env])
 
 
     
