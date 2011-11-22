@@ -130,6 +130,8 @@ Feature: Prompt Meme Challenge
     And I am logged in as "myname1"
   When I sign up for Battle 12 with combination A
   When I go to "Battle 12" collection's page
+  # TODO: there is no more prompt count at all?
+  # Then show me the main content
   Then I should see "Total prompts: 2"
     And I should see "Claimed prompts: 0"
 
@@ -139,7 +141,7 @@ Feature: Prompt Meme Challenge
     And I am logged in as "myname1"
   When I sign up for Battle 12 with combination A
   When I go to the collections page
-  Then I should see "Prompts 2"
+  Then I should see "Prompts: 2"
 
   Scenario: Signups in the dashboard have correct controls
   
@@ -189,7 +191,7 @@ Feature: Prompt Meme Challenge
   And I am logged in as "myname2"
   When I sign up for Battle 12 with combination B
   When I view prompts for "Battle 12"
-    And I follow "↑&nbsp;Fandom"
+    And I sort by fandom
   Then I should see "Something else weird"
   
   Scenario: Sign up for a prompt meme with no tags
@@ -205,6 +207,7 @@ Feature: Prompt Meme Challenge
   When I am logged in as "myname1"
   When I sign up for Battle 12 with combination E
   When I claim a prompt from "Battle 12"
+  # TODO: there is no link to unposted claims anymore?
   When I view unposted claims for "Battle 12"
   Then I should see "Weird description"
   
@@ -212,10 +215,11 @@ Feature: Prompt Meme Challenge
   
   Given I have no-column prompt meme fully set up
   When I am logged in as "myname1"
-  When I sign up for Battle 12 with combination E
-  When I view prompts for "Battle 12"
+    And I sign up for Battle 12 with combination E
+    And I view prompts for "Battle 12"
   # TODO: We need to check the display for fandomless memes
-  Then I should not see "Fandom"
+  Then I should not see "sort"
+
   
   Scenario: Claim a prompt and view claims on main page and user page
   
@@ -233,6 +237,7 @@ Feature: Prompt Meme Challenge
   When I sign up for Battle 12 with combination A
     And I claim a prompt from "Battle 12"
   When I go to "Battle 12" collection's page
+  # TODO: have these been removed by design or by accident? and could we have them back?
   Then I should see "Total prompts: 2"
     And I should see "Claimed prompts: 1"
   
@@ -337,13 +342,14 @@ Feature: Prompt Meme Challenge
   When I am logged in as "myname1"
   When I sign up for Battle 12 with combination C
   When I am logged in as "mod1"
+  # TODO: mods can't delete prompts anymore?
   When I delete the prompt by "myname1"
   Then I should see "Prompt was deleted"
     And I should see "Prompts for Battle 12"
     And I should not see "Signups for Battle 12"
   #  And "myname1" should be emailed
   
-  Scenario: Mod cannot edit someone else's prompt
+  Scenario: Mod cannot edit someone else's prompt TODO: hinkiness going on
   
   Given I have Battle 12 prompt meme fully set up
   When I am logged in as "myname1"
@@ -351,6 +357,7 @@ Feature: Prompt Meme Challenge
   When I am logged in as "mod1"
   When I edit the first prompt
   Then I should not see "Submit a Prompt for Battle 12"
+    # And show me the main content
     And I should see "You can't edit someone else's prompt"
 
   Scenario: User can't delete prompt if they don't have enough
@@ -379,7 +386,7 @@ Feature: Prompt Meme Challenge
     And I follow "Prompts ("
   When I press "Claim"
   Then I should see "New claim made."
-    And I should see "(Anonymous)"
+    And I should see "by Anonymous"
     And I should not see "myname" within "#main"
   
   Scenario: Fulfilling a claim ticks the right boxes automatically
@@ -423,6 +430,7 @@ Feature: Prompt Meme Challenge
   When I am on my user page
     And I follow "Claims"
   Then I should see "Fulfilled Story"
+   # TODO: should I? It's not there at all
     And I should not see "Not yet posted"
   
   Scenario: Claims count should be correct, shows fulfilled claims as well
@@ -434,6 +442,7 @@ Feature: Prompt Meme Challenge
     And I claim a prompt from "Battle 12"
   When I fulfill my claim
   When I am on my user page
+  # Then show me the sidebar # TODO: it has Claims (0) but why?
   Then I should see "Claims (1)"
   
   Scenario: Claim shows as fulfilled to another user
@@ -447,13 +456,13 @@ Feature: Prompt Meme Challenge
   When I am logged in as "myname1"
   When I go to "Battle 12" collection's page
     And I follow "Prompts ("
-  Then I should see "Secret!" within "#fulfilled_claims"
-    And I should not see "Secret!" within "#unfulfilled_claims"
-  When I follow "Prompts ("
-    And I follow "Show Claims"
-  Then I should not see "Claimed by: (Anonymous)"
-  When I follow "Show Filled"
-  Then I should see "Claimed by: (Anonymous) (Filled)"
+  Then I should see "Fulfilled By"
+    And I should see "Mystery Work"
+  # When I follow "Prompts ("
+  #  And I follow "Show Claims"
+  # Then I should not see "Claimed by: (Anonymous)"
+  # When I follow "Show Filled"
+  # Then I should see "Claimed by: (Anonymous) (Filled)"
     
   Scenario: Prompts are counted up correctly
   
@@ -1375,7 +1384,7 @@ Feature: Prompt Meme Challenge
     And I follow "Download (CSV)"
   Then I should get a file with ending and type csv
 
-  Scenario: Download prompt CSV from requests page
+  Scenario: Download prompt CSV from requests page # was the feature removed? why?
   
   Given I am logged in as "mod1"
     And I have standard challenge tags setup
