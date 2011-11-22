@@ -13,8 +13,8 @@ redis_config = YAML.load_file(rails_root + '/config/redis.yml')
 
 redis_setup = redis_config[rails_env]
 if redis_setup.kind_of?({}.class)
-	$redis = Redis.new(redis_setup)
+  $redis = Redis.new(redis_setup)
 else
-	host, port = redis_setup.split(':')
-	$redis = Redis.new(:host => host, :port => port)
+  host, port = redis_setup.split(':')
+  $redis = Redis.new(:host => host, :port => port)
 end
