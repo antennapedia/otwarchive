@@ -4,7 +4,7 @@
 <head>
 <meta content="text/html; charset=UTF-8" http-equiv="Content-Type">
 
-<title>Class: PromptRestriction</title>
+<title>class PromptRestriction - RDoc Documentation</title>
 
 <link type="text/css" media="screen" href="./rdoc.css" rel="stylesheet">
 
@@ -125,6 +125,20 @@
 
   <ul class="link-list">
   
+    <li><a href="./Admin.html">Admin</a>
+  
+    <li><a href="./Admin/AdminInvitationsController.html">Admin::AdminInvitationsController</a>
+  
+    <li><a href="./Admin/AdminUsersController.html">Admin::AdminUsersController</a>
+  
+    <li><a href="./Admin/SettingsController.html">Admin::SettingsController</a>
+  
+    <li><a href="./Admin/SkinsController.html">Admin::SkinsController</a>
+  
+    <li><a href="./Admin/StatsController.html">Admin::StatsController</a>
+  
+    <li><a href="./Admin/UserCreationsController.html">Admin::UserCreationsController</a>
+  
     <li><a href="./Static.html">Static</a>
   
     <li><a href="./Static/BaseController.html">Static::BaseController</a>
@@ -139,23 +153,17 @@
   
     <li><a href="./Static/WorksController.html">Static::WorksController</a>
   
-    <li><a href="./Admin.html">Admin</a>
-  
-    <li><a href="./Admin/AdminInvitationsController.html">Admin::AdminInvitationsController</a>
-  
-    <li><a href="./Admin/AdminUsersController.html">Admin::AdminUsersController</a>
-  
-    <li><a href="./Admin/SettingsController.html">Admin::SettingsController</a>
-  
-    <li><a href="./Admin/SkinsController.html">Admin::SkinsController</a>
-  
-    <li><a href="./Admin/UserCreationsController.html">Admin::UserCreationsController</a>
-  
     <li><a href="./Challenge.html">Challenge</a>
   
     <li><a href="./Challenge/GiftExchangeController.html">Challenge::GiftExchangeController</a>
   
     <li><a href="./Challenge/PromptMemeController.html">Challenge::PromptMemeController</a>
+  
+    <li><a href="./Opendoors.html">Opendoors</a>
+  
+    <li><a href="./Opendoors/ExternalAuthorsController.html">Opendoors::ExternalAuthorsController</a>
+  
+    <li><a href="./Opendoors/ToolsController.html">Opendoors::ToolsController</a>
   
     <li><a href="./StoryParser.html">StoryParser</a>
   
@@ -451,6 +459,8 @@
   
     <li><a href="./RedirectController.html">RedirectController</a>
   
+    <li><a href="./RedisMailQueue.html">RedisMailQueue</a>
+  
     <li><a href="./RelatedWork.html">RelatedWork</a>
   
     <li><a href="./RelatedWorksController.html">RelatedWorksController</a>
@@ -572,6 +582,10 @@
     <li><a href="./WeightedRandom.html">WeightedRandom</a>
   
     <li><a href="./Work.html">Work</a>
+  
+    <li><a href="./WorkLink.html">WorkLink</a>
+  
+    <li><a href="./WorkLinksController.html">WorkLinksController</a>
   
     <li><a href="./WorkObserver.html">WorkObserver</a>
   
@@ -942,8 +956,8 @@
   <span class="ruby-identifier">tag_set_titles</span>.<span class="ruby-identifier">split</span>(<span class="ruby-string">','</span>).<span class="ruby-identifier">reject</span> {<span class="ruby-operator">|</span><span class="ruby-identifier">title</span><span class="ruby-operator">|</span> <span class="ruby-identifier">title</span>.<span class="ruby-identifier">blank?</span>}.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">title</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">title</span>.<span class="ruby-identifier">strip!</span>
     <span class="ruby-identifier">ots</span> = <span class="ruby-constant">OwnedTagSet</span>.<span class="ruby-identifier">find_by_title</span>(<span class="ruby-identifier">title</span>)
-    <span class="ruby-identifier">errors</span>.<span class="ruby-identifier">add</span>(<span class="ruby-value">:base</span>, <span class="ruby-identifier">ts</span>(<span class="ruby-string">&quot;We couldn't find the tag set {{title}}.&quot;</span>, <span class="ruby-value">:title</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">h</span>(<span class="ruby-identifier">title</span>))) <span class="ruby-keyword">and</span> <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">ots</span>.<span class="ruby-identifier">nil?</span>
-    <span class="ruby-identifier">errors</span>.<span class="ruby-identifier">add</span>(<span class="ruby-value">:base</span>, <span class="ruby-identifier">ts</span>(<span class="ruby-string">&quot;The tag set {{title}} is not available for public use.&quot;</span>, <span class="ruby-value">:title</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">h</span>(<span class="ruby-identifier">title</span>))) <span class="ruby-keyword">and</span> <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> (<span class="ruby-operator">!</span><span class="ruby-identifier">ots</span>.<span class="ruby-identifier">usable</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span><span class="ruby-identifier">ots</span>.<span class="ruby-identifier">user_is_moderator?</span>(<span class="ruby-constant">User</span>.<span class="ruby-identifier">current_user</span>))
+    <span class="ruby-identifier">errors</span>.<span class="ruby-identifier">add</span>(<span class="ruby-value">:base</span>, <span class="ruby-identifier">ts</span>(<span class="ruby-string">&quot;We couldn't find the tag set {{title}}.&quot;</span>, <span class="ruby-value">:title</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">title</span>)) <span class="ruby-keyword">and</span> <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">ots</span>.<span class="ruby-identifier">nil?</span>
+    <span class="ruby-identifier">errors</span>.<span class="ruby-identifier">add</span>(<span class="ruby-value">:base</span>, <span class="ruby-identifier">ts</span>(<span class="ruby-string">&quot;The tag set {{title}} is not available for public use.&quot;</span>, <span class="ruby-value">:title</span> =<span class="ruby-operator">&gt;</span> <span class="ruby-identifier">title</span>)) <span class="ruby-keyword">and</span> <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> (<span class="ruby-operator">!</span><span class="ruby-identifier">ots</span>.<span class="ruby-identifier">usable</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span><span class="ruby-identifier">ots</span>.<span class="ruby-identifier">user_is_moderator?</span>(<span class="ruby-constant">User</span>.<span class="ruby-identifier">current_user</span>))
     <span class="ruby-keyword">unless</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">owned_tag_sets</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">ots</span>)
       <span class="ruby-keyword">self</span>.<span class="ruby-identifier">owned_tag_sets</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">ots</span>
     <span class="ruby-keyword">end</span>
@@ -1139,7 +1153,7 @@
 
 <footer id="validator-badges">
   <p><a href="http://validator.w3.org/check/referer">[Validate]</a>
-  <p>Generated by <a href="https://github.com/rdoc/rdoc">RDoc</a> 3.11.
+  <p>Generated by <a href="https://github.com/rdoc/rdoc">RDoc</a> 3.12.
   <p>Generated with the <a href="http://deveiate.org/projects/Darkfish-Rdoc/">Darkfish Rdoc Generator</a> 3.
 </footer>
 

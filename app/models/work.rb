@@ -2,13 +2,14 @@ class Work < ActiveRecord::Base
 
   include Taggable
   include Collectible
+  include Pseudable
+  include WorkStats
 
   ########################################################################
   # ASSOCIATIONS
   ########################################################################
 
-  has_one :hit_counter, :dependent => :destroy
-  has_many :creatorships, :as => :creation
+  has_many :creatorships, :as => :creation, :dependent => :destroy
   has_many :pseuds, :through => :creatorships
   has_many :users, :through => :pseuds, :uniq => true
 
@@ -17,7 +18,7 @@ class Work < ActiveRecord::Base
   has_many :external_author_names, :through => :external_creatorships, :inverse_of => :works
   has_many :external_authors, :through => :external_author_names, :uniq => true
 
-  has_many :chapters
+  has_many :chapters # we do NOT use dependent => destroy here because we want to destroy chapters in REVERSE order
   validates_associated :chapters
 
   has_many :serial_works, :dependent => :destroy
@@ -34,6 +35,8 @@ class Work < ActiveRecord::Base
 
   has_bookmarks
   has_many :user_tags, :through => :bookmarks, :source => :tags
+  
+  has_many :subscriptions, :as => :subscribable, :dependent => :destroy
 
   has_many :challenge_assignments, :as => :creation
   has_many :challenge_claims, :as => :creation
@@ -74,6 +77,16 @@ class Work < ActiveRecord::Base
       errors.add(:base, ts("You do not have permission to use that custom work stylesheet."))
     end
   end
+  
+  # statistics
+  has_many :work_links, :dependent => :destroy      
+  has_one :hit_counter, :dependent => :destroy
+  after_create :create_hit_counter
+  def create_hit_counter
+    counter = self.build_hit_counter
+    counter.save
+  end
+  
 
   ########################################################################
   # VIRTUAL ATTRIBUTES
@@ -229,7 +242,6 @@ class Work < ActiveRecord::Base
   # AUTHORSHIP
   ########################################################################
 
-
   # Virtual attribute for pseuds
   def author_attributes=(attributes)
     selected_pseuds = Pseud.find(attributes[:ids])
@@ -341,6 +353,12 @@ class Work < ActiveRecord::Base
     self.visible(user) == self
   end
 
+  def unrestricted=(setting)
+    if setting == "1"
+      self.restricted = false
+    end
+  end
+  def unrestricted; !self.restricted; end
 
   def unrevealed?(user=User.current_user)
     # eventually here is where we check if it's in a challenge that hasn't been made public yet
@@ -378,7 +396,7 @@ class Work < ActiveRecord::Base
       # do is update with current time
       if recent_date == Date.today && self.revised_at && self.revised_at.to_date == Date.today
         return self.revised_at
-      elsif recent_date == Date.today && self.revised_at && self.revised_at.to_date != Date.today
+      elsif recent_date == Date.today && self.revised_at && self.revised_at.to_date != Date.today || recent_date.nil?
         self.revised_at = Time.now
       else
         self.revised_at = DateTime::jd(recent_date.jd, 12, 0, 0)
@@ -497,12 +515,17 @@ class Work < ActiveRecord::Base
 
   # Gets the current first chapter
   def first_chapter
-    self.chapters.find(:first, :order => 'position ASC') || self.chapters.first
+    self.chapters.order('position ASC').first || self.chapters.first
   end
 
   # Gets the current last chapter
   def last_chapter
-    self.chapters.find(:first, :order => 'position DESC')
+    self.chapters.order('position DESC').first
+  end
+  
+  # Gets the current last posted chapter
+  def last_posted_chapter
+    self.chapters.posted.order('position DESC').first
   end
 
   # Returns true if a work has or will have more than one chapter
@@ -548,49 +571,22 @@ class Work < ActiveRecord::Base
     end
   end
 
-  after_create :create_hit_counter
-  def create_hit_counter
-    counter = self.build_hit_counter
-    counter.save
-    $redis.set(self.redis_key(:hit_count), 0)
-  end
-
-  # save hits
-  def increment_hit_count(visitor)
-    if self.last_visitor != visitor
-      unless User.current_user.is_a?(User) && User.current_user.is_author_of?(self)
-        $redis.set(self.redis_key(:hit_count), self.database_hits) unless $redis.get(self.redis_key(:hit_count))
-        $redis.incr(self.redis_key(:hit_count))
-        $redis.set(self.redis_key(:last_visitor), visitor)
-        $redis.sadd("Work:new_hits", self.id)
-      end
-    end
-    return self.hits
-  end
-
-  # the last visitor is just used to decide whether or not to increment the hit count
-  # so persisting it in the database is not critical
-  def last_visitor
-    $redis.get(self.redis_key(:last_visitor))
-  end
-
-  # save downloads
-  # there's no point in this any more. it will never be more than
-  # 4*number of revisions.. all other times will be served by nginx
-#  def increment_download_count
-#    counter = self.hit_counter
-#    unless User.current_user.is_a?(User) && User.current_user.is_author_of?(self)
-#      counter.download_count = counter.download_count + 1
-#    end
-#  end
-
   after_update :remove_outdated_downloads
   def remove_outdated_downloads
     FileUtils.rm_rf(self.download_dir)
   end
+  
+  # spread downloads out by first two letters of authorname
   def download_dir
-    "#{Rails.public_path}/downloads/#{self.download_authors}/#{self.id}"
+    "#{Rails.public_path}/#{self.download_folder}"
   end
+
+  # split out so we can use this in works_helper
+  def download_folder
+    dl_authors = self.download_authors    
+    "downloads/#{dl_authors[0..1]}/#{dl_authors}/#{self.id}"
+  end
+  
   def download_fandoms
     string = self.fandoms.size > 3 ? ts("Multifandom") : self.fandoms.string
     string = Iconv.conv("ASCII//TRANSLIT//IGNORE", "UTF8", string)
@@ -615,24 +611,6 @@ class Work < ActiveRecord::Base
   def download_basename
     "#{self.download_dir}/#{self.download_title}"
   end
-
-  def hits
-    redis_hits = $redis.get(self.redis_key(:hit_count))
-    return self.database_hits unless redis_hits
-    return redis_hits.to_i
-  end
-
-  def database_hits
-    db_hits = self.hit_counter ? self.hit_counter.hit_count : 0
-    return db_hits
-  end
-
-  # helper method to generate redis keys
-  # examples: "work:2:hit_count", "work:776:last_visitor"
-  def redis_key(sym)
-    "work:#{self.id}:#{sym}"
-  end
-
 
   #######################################################################
   # TAGGING
@@ -736,21 +714,27 @@ class Work < ActiveRecord::Base
 
   # Gets all comments for all chapters in the work
   def find_all_comments
-    self.chapters.collect { |c| c.find_all_comments }.flatten
+    Comment.where(
+      :parent_type => 'Chapter', 
+      :parent_id => self.chapters.value_of(:id)
+    )
   end
 
   # Returns number of comments
-  # Hidden and deleted comments are referenced in the view because of the threading system - we don't necessarily need to
+  # Hidden and deleted comments are referenced in the view because of 
+  # the threading system - we don't necessarily need to
   # hide their existence from other users
   def count_all_comments
-    self.chapters.collect { |c| c.count_all_comments }.sum
+    find_all_comments.count
   end
 
   # returns the top-level comments for all chapters in the work
   def comments
-    self.chapters.collect { |c| c.comments }.flatten
+    Comment.where(
+      :commentable_type => 'Chapter', 
+      :commentable_id => self.chapters.value_of(:id)
+    )
   end
-
 
   ########################################################################
   # RELATED WORKS

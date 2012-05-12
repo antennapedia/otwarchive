@@ -165,7 +165,9 @@ module HtmlCleaner
       end   
       value = Sanitize.clean(add_paragraphs_to_text(fix_bad_characters(value)), 
                              Sanitize::Config::ARCHIVE.merge(:transformers => transformers))
-      value = Nokogiri::HTML.fragment(value).to_xhtml
+      doc = Nokogiri::HTML::Document.new
+      doc.encoding = "UTF-8"
+      value = doc.fragment(value).to_xhtml
     else
       # clean out all tags
       value = Sanitize.clean(fix_bad_characters(value))
@@ -338,6 +340,7 @@ module HtmlCleaner
     doc = Nokogiri::XML.parse("<myroot>#{text}</myroot>")
     doc.errors.each do |error|
       match = error.message.match(/Premature end of data in tag (\w+) line (\d+)/)
+      
       text = close_unclosed_tag(text, match[1], match[2]) if match
 
       match = error.message.match(/Opening and ending tag mismatch: (\w+) line (\d+) and myroot/)

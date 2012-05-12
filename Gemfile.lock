@@ -112,6 +112,7 @@ GEM
       rake (>= 0.8.7)
     gherkin (2.3.3)
       json (~> 1.4.6)
+    google_visualr (2.1.2)
     highline (1.6.2)
     htmlentities (4.2.1)
     i18n (0.5.0)
@@ -145,7 +146,7 @@ GEM
     net-ssh (2.2.1)
     net-ssh-gateway (1.1.0)
       net-ssh (>= 1.99.1)
-    nokogiri (1.4.3.1)
+    nokogiri (1.5.0)
     paperclip (2.3.16)
       activerecord (>= 2.3.0)
       activesupport (>= 2.3.2)
@@ -218,8 +219,8 @@ GEM
     ruby_core_source (0.1.4)
       archive-tar-minitar (>= 0.5.2)
     rubyzip (0.9.4)
-    sanitize (1.2.1)
-      nokogiri (~> 1.4.1)
+    sanitize (2.0.3)
+      nokogiri (>= 1.4.4, < 1.6)
     selenium-webdriver (0.0.29)
       childprocess (>= 0.0.7)
       ffi (~> 0.6.3)
@@ -273,6 +274,7 @@ DEPENDENCIES
   factory_girl
   fakeweb
   fastimage
+  google_visualr (>= 2.1)
   htmlentities
   jquery-rails (>= 0.2.6)
   launchy
@@ -280,7 +282,7 @@ DEPENDENCIES
   memcache-client
   mocha
   mysql2
-  nokogiri
+  nokogiri (>= 1.4.2)
   paperclip (>= 2.3.16)
   permit_yo
   pickle

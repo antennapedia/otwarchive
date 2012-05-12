@@ -18,6 +18,7 @@ class CollectionsController < ApplicationController
       @collections = @collection.children.by_title.paginate(:page => params[:page])
     elsif params[:user_id] && (@user = User.find_by_login(params[:user_id]))
       @collections = @user.owned_collections.by_title.paginate(:page => params[:page])
+      @page_subtitle = ts("created by ") + @user.login
     else
       if params[:user_id]
         flash.now[:error] = ts("We couldn't find a user by that name, sorry.")
@@ -43,18 +44,20 @@ class CollectionsController < ApplicationController
 
   def show
     unless @collection
-  	  flash[:error] = t('collection_not_found', :default => "Sorry, we couldn't find the collection you were looking for.")
+  	  flash[:error] = ts("Sorry, we couldn't find the collection you were looking for.")
       redirect_to collections_path and return
     end
+    @page_subtitle = @collection.title
     
     if @collection.collection_preference.show_random? || params[:show_random]
       # show a random selection of works/bookmarks
       @works = Work.in_collection(@collection).visible.random_order.limit(ArchiveConfig.NUMBER_OF_ITEMS_VISIBLE_IN_DASHBOARD)
-      visible_bookmarks = @collection.bookmarks.visible(:order => 'RAND()')
+      visible_bookmarks = @collection.approved_bookmarks.visible(:order => 'RAND()').limit(ArchiveConfig.NUMBER_OF_ITEMS_VISIBLE_IN_DASHBOARD * 2)
     else
       # show recent
       @works = Work.in_collection(@collection).visible.ordered_by_date_desc.limit(ArchiveConfig.NUMBER_OF_ITEMS_VISIBLE_IN_DASHBOARD)
-      visible_bookmarks = @collection.bookmarks.visible(:order => 'bookmarks.created_at DESC')
+      # visible_bookmarks = @collection.approved_bookmarks.visible(:order => 'bookmarks.created_at DESC')
+      visible_bookmarks = Bookmark.in_collection(@collection).visible(:order => 'bookmarks.created_at DESC').limit(ArchiveConfig.NUMBER_OF_ITEMS_VISIBLE_IN_DASHBOARD * 2)
     end
     # Having the number of items as a limit was finding the limited number of items, then visible ones within them
     @bookmarks = visible_bookmarks[0...ArchiveConfig.NUMBER_OF_ITEMS_VISIBLE_IN_DASHBOARD]

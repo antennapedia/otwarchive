@@ -27,6 +27,7 @@ $j(document).ready(function() {
         this.href = this.href.replace(/\/confirm_delete$/, "");
         $j(this).attr("data-method", "delete").attr("data-confirm", "Are you sure? This CANNOT BE UNDONE!");
     });
+    $j('.commas li:last-child').addClass('last');
 });
 
 function visualizeTables() {
@@ -360,3 +361,14 @@ function setupTooltips() {
        });
     });
 }
+
+// prevent double submission for JS enabled
+jQuery.fn.preventDoubleSubmit = function() {
+  jQuery(this).submit(function() {
+    if (this.beenSubmitted)
+      return false;
+    else
+      this.beenSubmitted = true;
+  });
+};
+

@@ -57,9 +57,11 @@ class Collection < ActiveRecord::Base
   has_many :works, :through => :collection_items, :source => :item, :source_type => 'Work'
   has_many :approved_works, :through => :collection_items, :source => :item, :source_type => 'Work',
     :conditions => ['collection_items.user_approval_status = ? AND collection_items.collection_approval_status = ? AND works.posted = true', CollectionItem::APPROVED, CollectionItem::APPROVED]
+
   has_many :bookmarks, :through => :collection_items, :source => :item, :source_type => 'Bookmark'
   has_many :approved_bookmarks, :through => :collection_items, :source => :item, :source_type => 'Bookmark',
     :conditions => ['collection_items.user_approval_status = ? AND collection_items.collection_approval_status = ?', CollectionItem::APPROVED, CollectionItem::APPROVED]
+  
   has_many :fandoms, :through => :approved_works, :uniq => true
   has_many :filters, :through => :approved_works, :uniq => true
 
@@ -126,6 +128,10 @@ class Collection < ActiveRecord::Base
   validates_format_of :name,
     :message => t('collection.name_invalid', :default => 'must begin and end with a letter or number; it may also contain underscores but no other characters.'),
     :with => /\A[A-Za-z0-9]\w*[A-Za-z0-9]\Z/
+  validates_length_of :icon_alt_text, :allow_blank => true, :maximum => ArchiveConfig.ICON_ALT_MAX,
+    :too_long => ts("must be less than %{max} characters long.", :max => ArchiveConfig.ICON_ALT_MAX)
+  validates_length_of :icon_comment_text, :allow_blank => true, :maximum => ArchiveConfig.ICON_COMMENT_MAX,
+    :too_long => ts("must be less than %{max} characters long.", :max => ArchiveConfig.ICON_COMMENT_MAX)
 
   validates :email, :email_veracity => {:allow_blank => true}
 
@@ -328,14 +334,10 @@ class Collection < ActiveRecord::Base
   def challenge? ; !self.challenge.nil? ; end
   
   def gift_exchange?
-    if self.challenge_type == "GiftExchange"
-      return true
-    end
+    return self.challenge_type == "GiftExchange"
   end
   def prompt_meme?
-    if self.challenge_type == "PromptMeme"
-      return true
-    end
+    return self.challenge_type == "PromptMeme"
   end
 
   def not_empty?

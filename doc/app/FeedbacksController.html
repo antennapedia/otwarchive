@@ -4,7 +4,7 @@
 <head>
 <meta content="text/html; charset=UTF-8" http-equiv="Content-Type">
 
-<title>Class: FeedbacksController</title>
+<title>class FeedbacksController - RDoc Documentation</title>
 
 <link type="text/css" media="screen" href="./rdoc.css" rel="stylesheet">
 
@@ -99,6 +99,20 @@
 
   <ul class="link-list">
   
+    <li><a href="./Admin.html">Admin</a>
+  
+    <li><a href="./Admin/AdminInvitationsController.html">Admin::AdminInvitationsController</a>
+  
+    <li><a href="./Admin/AdminUsersController.html">Admin::AdminUsersController</a>
+  
+    <li><a href="./Admin/SettingsController.html">Admin::SettingsController</a>
+  
+    <li><a href="./Admin/SkinsController.html">Admin::SkinsController</a>
+  
+    <li><a href="./Admin/StatsController.html">Admin::StatsController</a>
+  
+    <li><a href="./Admin/UserCreationsController.html">Admin::UserCreationsController</a>
+  
     <li><a href="./Static.html">Static</a>
   
     <li><a href="./Static/BaseController.html">Static::BaseController</a>
@@ -113,23 +127,17 @@
   
     <li><a href="./Static/WorksController.html">Static::WorksController</a>
   
-    <li><a href="./Admin.html">Admin</a>
-  
-    <li><a href="./Admin/AdminInvitationsController.html">Admin::AdminInvitationsController</a>
-  
-    <li><a href="./Admin/AdminUsersController.html">Admin::AdminUsersController</a>
-  
-    <li><a href="./Admin/SettingsController.html">Admin::SettingsController</a>
-  
-    <li><a href="./Admin/SkinsController.html">Admin::SkinsController</a>
-  
-    <li><a href="./Admin/UserCreationsController.html">Admin::UserCreationsController</a>
-  
     <li><a href="./Challenge.html">Challenge</a>
   
     <li><a href="./Challenge/GiftExchangeController.html">Challenge::GiftExchangeController</a>
   
     <li><a href="./Challenge/PromptMemeController.html">Challenge::PromptMemeController</a>
+  
+    <li><a href="./Opendoors.html">Opendoors</a>
+  
+    <li><a href="./Opendoors/ExternalAuthorsController.html">Opendoors::ExternalAuthorsController</a>
+  
+    <li><a href="./Opendoors/ToolsController.html">Opendoors::ToolsController</a>
   
     <li><a href="./StoryParser.html">StoryParser</a>
   
@@ -425,6 +433,8 @@
   
     <li><a href="./RedirectController.html">RedirectController</a>
   
+    <li><a href="./RedisMailQueue.html">RedisMailQueue</a>
+  
     <li><a href="./RelatedWork.html">RelatedWork</a>
   
     <li><a href="./RelatedWorksController.html">RelatedWorksController</a>
@@ -547,6 +557,10 @@
   
     <li><a href="./Work.html">Work</a>
   
+    <li><a href="./WorkLink.html">WorkLink</a>
+  
+    <li><a href="./WorkLinksController.html">WorkLinksController</a>
+  
     <li><a href="./WorkObserver.html">WorkObserver</a>
   
     <li><a href="./WorkSkin.html">WorkSkin</a>
@@ -606,7 +620,7 @@
 
           
           <div class="method-source-code" id="create-source">
-            <pre><span class="ruby-comment"># File app/controllers/feedbacks_controller.rb, line 16</span>
+            <pre><span class="ruby-comment"># File app/controllers/feedbacks_controller.rb, line 15</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">create</span>
   <span class="ruby-ivar">@feedback</span> = <span class="ruby-constant">Feedback</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">params</span>[<span class="ruby-value">:feedback</span>])
   <span class="ruby-identifier">respond_to</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">format</span><span class="ruby-operator">|</span>
@@ -661,7 +675,6 @@
             <pre><span class="ruby-comment"># File app/controllers/feedbacks_controller.rb, line 6</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">new</span>
   <span class="ruby-ivar">@feedback</span> = <span class="ruby-constant">Feedback</span>.<span class="ruby-identifier">new</span>
-  <span class="ruby-ivar">@page_title</span> = <span class="ruby-string">&quot;Support and Feedback&quot;</span>
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">logged_in_as_admin?</span>
     <span class="ruby-ivar">@feedback</span>.<span class="ruby-identifier">email</span> = <span class="ruby-identifier">current_admin</span>.<span class="ruby-identifier">email</span>
   <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">is_registered_user?</span>
@@ -700,7 +713,7 @@
 
           
           <div class="method-source-code" id="build_post_info-source">
-            <pre><span class="ruby-comment"># File app/controllers/feedbacks_controller.rb, line 45</span>
+            <pre><span class="ruby-comment"># File app/controllers/feedbacks_controller.rb, line 44</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">build_post_info</span>(<span class="ruby-identifier">feedback</span>)
   <span class="ruby-identifier">post_info</span> = <span class="ruby-string">&quot;&quot;</span>
   <span class="ruby-identifier">post_info</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-string">&quot;&lt;bug&gt;&quot;</span>
@@ -733,7 +746,7 @@
 
 <footer id="validator-badges">
   <p><a href="http://validator.w3.org/check/referer">[Validate]</a>
-  <p>Generated by <a href="https://github.com/rdoc/rdoc">RDoc</a> 3.11.
+  <p>Generated by <a href="https://github.com/rdoc/rdoc">RDoc</a> 3.12.
   <p>Generated with the <a href="http://deveiate.org/projects/Darkfish-Rdoc/">Darkfish Rdoc Generator</a> 3.
 </footer>
 

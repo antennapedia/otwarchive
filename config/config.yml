@@ -74,13 +74,15 @@ NOTES_MAX: 5000
 COMMENT_MAX: 4300
 TAG_MAX: 100
 CONTENT_MIN: 10
-CONTENT_MAX: 500000
+CONTENT_MAX: 510000
+CONTENT_MAX_DISPLAYED: 500000
 LOGNOTE_MIN: 5
 LOGNOTE_MAX: 1250
 FEEDBACK_SUMMARY_MAX: 100
 INFO_MAX: 100000
 FAQ_MAX: 200000
 ICON_ALT_MAX: 50
+ICON_COMMENT_MAX: 50
 
 # max number of tags of each type allowed in challenge prompts (requests/offers)
 # increasing this number can lead to slower automated matching
@@ -181,7 +183,7 @@ NONZERO_INTEGER_PARAMETERS:
   per_page: 25
 
 # These fields are query fields and are allowed to contain "less than" values
-FIELDS_ALLOWING_LESS_THAN: ["query", "words", "kudos", "hits"]
+FIELDS_ALLOWING_LESS_THAN: ["query", "words", "kudos", "hits", "date"]
 
 
 # Only the following fields are allowed to have HTML. In all others,

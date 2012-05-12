@@ -86,6 +86,11 @@ When /^I view the work "([^\"]*)"(?: in (full|chapter-by-chapter) mode)?$/ do |w
   When %{I follow "View chapter by chapter"} if mode == "chapter-by-chapter"
 end
 
+When /^I view the work "([^\"]*)" with comments$/ do |work|
+  work = Work.find_by_title!(work)
+  visit work_url(work, :anchor => "comments", :show_comments => true)
+end
+
 When /^I edit the work "([^\"]*)"$/ do |work|
   work = Work.find_by_title!(work)
   visit edit_work_url(work)
@@ -117,6 +122,26 @@ When /^I post the work "([^\"]*)" without preview$/ do |title|
     click_button("Post without preview")
     Then "I should see \"Work was successfully posted.\""
   end
+end
+
+When /^a chapter is added to "([^\"]*)"$/ do |work_title|
+  When %{a draft chapter is added to "#{work_title}"}
+  click_button("Post Chapter")
+end
+
+When /^a draft chapter is added to "([^\"]*)"$/ do |work_title|
+  work = Work.find_by_title(work_title)
+  user = work.users.first
+  When %{I am logged in as "#{user.login}"}
+  visit work_url(work)
+  And %{I follow "Add Chapter"}
+  And %{I fill in "content" with "la la la la la la la la la la la"}
+  And %{I press "Preview"}  
+end
+
+# meant to be used in conjunction with above step
+When /^I post the draft chapter$/ do
+  click_button("Post Chapter")
 end
 
 When /^I post the work "([^\"]*)" with fandom "([^\"]*)" with freeform "([^\"]*)" with category "([^\"]*)"$/ do |title, fandom, freeform, category|

@@ -7,16 +7,16 @@ class User < ActiveRecord::Base
   LOGIN_LENGTH_MAX = 40
 
   validates_length_of :login, :within => LOGIN_LENGTH_MIN..LOGIN_LENGTH_MAX,
-    :too_short => "is too short (minimum is #{LOGIN_LENGTH_MIN} characters)",
-    :too_long => "is too long (maximum is #{LOGIN_LENGTH_MAX} characters)"
+    :too_short => ts("is too short (minimum is %{min_login} characters)", :min_login => LOGIN_LENGTH_MIN),
+    :too_long => ts("is too long (maximum is %{max_login} characters)", :max_login => LOGIN_LENGTH_MAX)
 
   PASSWORD_LENGTH_MIN = 6
   PASSWORD_LENGTH_MAX = 40
 
   # allow nil so can save existing users
   validates_length_of :password, :within => PASSWORD_LENGTH_MIN..PASSWORD_LENGTH_MAX, :allow_nil => true,
-    :too_short => "is too short (minimum is #{PASSWORD_LENGTH_MIN} characters)",
-    :too_long => "is too long (maximum is #{PASSWORD_LENGTH_MAX} characters)"
+    :too_short => ts("is too short (minimum is %{min_pwd} characters)", :min_pwd => PASSWORD_LENGTH_MIN),
+    :too_long => ts("is too long (maximum is %{max_pwd} characters)", :max_pwd => PASSWORD_LENGTH_MAX)
 
 ####
 
@@ -161,9 +161,10 @@ class User < ActiveRecord::Base
   scope :out_of_invites, :conditions => {:out_of_invites => true}
 
   validates_format_of :login,
-    :message => t('login_invalid', :default => 'must begin and end with a letter or number; it may also contain underscores but no other characters.'),
+    :message => ts("must begin and end with a letter or number; it may also contain underscores but no other characters."),
     :with => /\A[A-Za-z0-9]\w*[A-Za-z0-9]\Z/
-  #validates_uniqueness_of :login, :message => ('login_already_used', :default => 'must be unique')
+  # done by authlogic
+  # validates_uniqueness_of :login, :message => ('login_already_used', :default => 'must be unique')
 
   validates :email, :email_veracity => true
 
@@ -174,12 +175,12 @@ class User < ActiveRecord::Base
 
   validates_acceptance_of :terms_of_service,
                          :allow_nil => false,
-                         :message => t('must_accept_tos', :default => 'Sorry, you need to accept the Terms of Service in order to sign up.'),
+                         :message => ts('Sorry, you need to accept the Terms of Service in order to sign up.'),
                          :if => :first_save?
 
   validates_acceptance_of  :age_over_13,
                           :allow_nil => false,
-                          :message => t('must_be_over_13', :default => 'Sorry, you have to be over 13!'),
+                          :message => ts('Sorry, you have to be over 13!'),
                           :if => :first_save?
 
   def to_param
@@ -190,6 +191,23 @@ class User < ActiveRecord::Base
   def self.for_claims(claims_ids)    
     joins(:request_claims).
     where("challenge_claims.id IN (?)", claims_ids)
+  end
+  
+  # Find users with a particular role and/or by name or email
+  # Options: inactive, page
+  def self.search_by_role(role, query, options = {})
+    return if role.blank? && query.blank?
+    users = User.select('DISTINCT users.*').order(:login)
+    if options[:inactive]
+      users = users.where("activated_at IS NULL")
+    end
+    if role.present?
+      users = users.joins(:roles).where("roles.id = ?", role.id)
+    end
+    if query.present?
+      users = users.joins(:pseuds).where("pseuds.name LIKE ? OR email = ?", "%#{query}%", query)
+    end
+    users.paginate(:page => options[:page] || 1)
   end
 
   ### AUTHENTICATION AND PASSWORDS
@@ -208,7 +226,8 @@ class User < ActiveRecord::Base
   def reset_user_password
     temp_password = generate_password(20)
     User.update_all("activation_code = '#{temp_password}', recently_reset = 1, updated_at = '#{Time.now}'", "id = #{self.id}")
-    UserMailer.reset_password(self.id, temp_password).deliver
+    # send synchronously to prevent getting caught in backed-up mail queue
+    UserMailer.reset_password(self.id, temp_password).deliver! 
   end
 
   def activate

@@ -47,6 +47,9 @@ class AdminSetting < ActiveRecord::Base
   def self.default_skin
     self.first ? (self.first.default_skin_id ? self.first.default_skin : Skin.default) : Skin.default
   end
+  def self.stats_updated_at
+    self.first ? self.first.stats_updated_at : nil
+  end
 
   # run once a day from cron
   def self.check_queue
@@ -66,14 +69,17 @@ class AdminSetting < ActiveRecord::Base
   end
   
   # update admin banner setting for all users when banner notice is changed
-  def self.banner_on!
-    Resque.enqueue(AdminSetting, :delayed_banner_on)
-  end
-  
-  def self.delayed_banner_on
+  def self.banner_on
     Preference.update_all("banner_seen = false")
   end
-
+    
+  def self.set_stats_updated_at(time)
+    if self.first 
+      self.first.stats_updated_at = time
+      self.first.save
+    end
+  end
+  
   private
   
   def expire_cached_settings

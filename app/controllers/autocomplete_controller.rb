@@ -23,7 +23,13 @@ class AutocompleteController < ApplicationController
   
   # PSEUDS
   def pseud
-    render_output(Pseud.autocomplete_lookup(:search_param => params[:term], :autocomplete_prefix => "autocomplete_pseud").map {|res| Pseud.fullname_from_autocomplete(res)})
+    if params[:term].blank?
+      # get the user's own pseuds
+      set_current_user
+      render_output(current_user.pseuds.collect(&:byline))
+    else
+      render_output(Pseud.autocomplete_lookup(:search_param => params[:term], :autocomplete_prefix => "autocomplete_pseud").map {|res| Pseud.fullname_from_autocomplete(res)})
+    end
   end
   
   ## TAGS  
@@ -33,7 +39,7 @@ class AutocompleteController < ApplicationController
     end
   public  
   # these are all basically duplicates but make our calls to autocomplete more readable
-  def tag; tag_output(params[:term], params[:type]); end
+  def tag; tag_output(params[:term], params[:type] || "all"); end
   def fandom; tag_output(params[:term], "fandom"); end
   def character; tag_output(params[:term], "character"); end
   def relationship; tag_output(params[:term], "relationship"); end

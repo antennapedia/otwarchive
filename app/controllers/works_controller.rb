@@ -4,12 +4,13 @@ class WorksController < ApplicationController
 
   # only registered users and NOT admin should be able to create new works
   before_filter :load_collection
-  before_filter :users_only, :only => [ :new, :create, :import, :import_multiple, :drafts, :preview, :show_multiple ]
-  before_filter :check_user_status, :only => [:new, :create, :edit, :update, :preview, :show_multiple, :edit_multiple ]
-  before_filter :load_work, :only => [ :show, :navigate, :edit, :update, :confirm_delete, :destroy, :preview, :edit_tags, :update_tags ]
-  before_filter :check_ownership, :only => [ :edit, :update, :confirm_delete, :destroy, :preview ]
+  before_filter :users_only, :except => [ :index, :show, :navigate, :search ]
+  before_filter :check_user_status, :except => [ :index, :show, :navigate, :search ]
+  before_filter :load_work, :except => [ :new, :create, :import, :index, :show_multiple, :edit_multiple, :update_multiple, :delete_multiple, :search, :drafts ]
+  # this only works to check ownership of a SINGLE item and only if load_work has happened beforehand
+  before_filter :check_ownership, :except => [ :index, :show, :navigate, :new, :create, :import, :show_multiple, :edit_multiple, :update_multiple, :delete_multiple, :search, :marktoread, :drafts ]
   before_filter :check_visibility, :only => [ :show, :navigate ]
-  before_filter :set_author_attributes, :only => [ :new, :create, :edit, :update, :manage_chapters, :preview, :show, :navigate ]
+  before_filter :set_author_attributes, :only => [ :edit, :update, :manage_chapters, :preview, :show, :navigate ]
   before_filter :set_instance_variables, :only => [ :new, :create, :edit, :update, :manage_chapters, :preview, :show, :navigate, :import ]
   before_filter :set_instance_variables_tags, :only => [ :edit_tags, :update_tags, :preview_tags ]
 
@@ -86,6 +87,7 @@ class WorksController < ApplicationController
     unless params[:tag_id].blank?
       @tag = Tag.find_by_name(params[:tag_id])
       if @tag
+        @page_subtitle = @tag.name
         @tag = @tag.merger if @tag.merger
         redirect_to url_for({:controller => :tags, :action => :show, :id => @tag}) and return unless @tag.canonical
         @selected_tags << @tag.id.to_s unless @selected_tags.include?(@tag.id.to_s)
@@ -95,14 +97,20 @@ class WorksController < ApplicationController
         return
       end
     end
+    
+    if @collection
+      @page_subtitle = @collection.title
+    end
 
     # if we're browsing by a particular user get works by that user
     unless params[:user_id].blank?
       @user = User.find_by_login(params[:user_id])
       if @user
+        @page_subtitle = ts("by ") + @user.login
         unless params[:pseud_id].blank?
           @author = @user.pseuds.find_by_name(params[:pseud_id])
           if @author
+            @page_subtitle = ts("by ") + @author.byline
             @selected_pseuds << @author.id unless @selected_pseuds.include?(@author.id)
           end
         end
@@ -197,6 +205,12 @@ class WorksController < ApplicationController
     end
 
     @tag_categories_limited = Tag::VISIBLE - ["Warning"]
+    
+    if current_user.respond_to?(:subscriptions)
+      @subscription = current_user.subscriptions.where(:subscribable_id => @work.id,
+                                                       :subscribable_type => 'Work').first ||
+                      current_user.subscriptions.build(:subscribable => @work)
+    end
 
     @page_title = @work.unrevealed? ? ts("Mystery Work") :
       get_page_title(@work.fandoms.size > 3 ? ts("Multifandom") : @work.fandoms.string,
@@ -211,7 +225,6 @@ class WorksController < ApplicationController
         @tweet_text = @tweet_text.truncate(95)
       end
     render :show
-    Rails.logger.debug "Work remote addr: #{request.remote_ip}"
     @work.increment_hit_count(request.remote_ip)
     Reading.update_or_create(@work, current_user) if current_user
   end
@@ -241,6 +254,7 @@ class WorksController < ApplicationController
       @work.collection_names = @collection.name if @collection
     end
     if params[:import]
+      @page_subtitle = ts("import")
       render :new_import and return
     elsif params[:load_unposted]
       @work = @unposted
@@ -391,7 +405,7 @@ class WorksController < ApplicationController
             @included = 0
           end
         end
-        @work.posted = true
+        @work.posted = true if params[:post_button]
         @work.minor_version = @work.minor_version + 1
         @work.set_challenge_info
         saved = @work.save
@@ -670,36 +684,65 @@ public
   def show_multiple
     @user = current_user
     if params[:pseud_id]
-      @author = @user.pseuds.find_by_name(params[:pseud_id])
-      @works = @author.works
+      @works = Work.joins(:pseuds).where(:pseud_id => params[:pseud_id])
     else
-      @works = @user.works
+      @works = Work.joins(:pseuds => :user).where("users.id = ?", @user.id)
     end
     if params[:work_ids]
-      @works = @works & Work.find(params[:work_ids])
+      @works = @works.where(:id => params[:work_ids])
     end
+    @works_by_fandom = @works.joins(:taggings).
+      joins("inner join tags on taggings.tagger_id = tags.id AND tags.type = 'Fandom'").
+      select("distinct tags.name as fandom, works.id as id, works.title as title").group_by(&:fandom)
   end
 
   def edit_multiple
+    if params[:commit] == "Orphan"
+      redirect_to new_orphan_path(:work_ids => params[:work_ids]) and return
+    end
     @user = current_user
-    @works = Work.find(params[:work_ids]) & @user.works
+    @works = Work.select("distinct works.*").joins(:pseuds => :user).where("users.id = ?", @user.id).where(:id => params[:work_ids])
+    if params[:commit] == "Delete"
+      render "confirm_delete_multiple" and return
+    end
+  end
 
+  def confirm_delete_multiple
+    @user = current_user
+    @works = Work.select("distinct works.*").joins(:pseuds => :user).where("users.id = ?", @user.id).where(:id => params[:work_ids])
+  end
+  
+  def delete_multiple
+    @user = current_user
+    @works = Work.joins(:pseuds => :user).where("users.id = ?", @user.id).where(:id => params[:work_ids]).readonly(false)
+    titles = @works.collect(&:title)
+    Rails.logger.info "!&!&!&!&&! GOT HERE #{titles}"
+    @works.each do |work|
+      work.destroy
+    end
+    flash[:notice] = ts("Your works %{titles} were deleted.", :titles => titles.join(", "))
+    redirect_to show_multiple_user_works_path(@user)
   end
 
   def update_multiple
     @user = current_user
-    @works = Work.find(params[:work_ids]) & @user.works
+    @works = Work.joins(:pseuds => :user).where("users.id = ?", @user.id).where(:id => params[:work_ids]).readonly(false)
     @errors = []
+    # to avoid overwriting, we entirely trash any blank fields and also any unchecked checkboxes
+    work_params = params[:work].reject {|key,value| value.blank? || value == "0"}
     @works.each do |work|
-      # actual stuff will happen here shortly
-      unless work.update_attributes!(params[:work].reject {|key,value| value.blank?})
+      # now we can just update each work independently, woo!
+      unless work.update_attributes(work_params)
         @errors << ts("The work %{title} could not be edited: %{error}", :title => work.title, :error => work.errors_on.to_s)
       end
     end
     unless @errors.empty?
       flash[:error] = ts("There were problems editing some works: %{errors}", :errors => @errors.join(", "))
+      redirect_to edit_multiple_user_works_path(@user)
+    else
+      flash[:notice] = ts("Your edits were put through! Please check over the works to make sure everything is right.")
+      redirect_to show_multiple_user_works_path(@user, :work_ids => @works.collect(&:id))
     end
-    redirect_to show_multiple_user_works_path(@user)
   end
 
   # marks a work to read later, or unmarks it if the work is already marked

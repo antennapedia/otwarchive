@@ -2,9 +2,26 @@ class UsersController < ApplicationController
   cache_sweeper :pseud_sweeper
 
   before_filter :check_user_status, :only => [:edit, :update]
-  before_filter :load_user, :only => [:show, :edit, :update, :destroy, :end_first_login, :end_banner, :change_username, :change_password, :change_email, :change_openid, :browse]
-  before_filter :check_ownership, :only => [:edit, :update, :destroy, :end_first_login, :end_banner, :change_username, :change_password, :change_email, :change_openid]
+  before_filter :load_user, :except => [:activate, :create, :delete_confirmation, :index, :new]
+  before_filter :check_ownership, :except => [:activate, :browse, :create, :delete_confirmation, :index, :new, :show]  
   before_filter :check_account_creation_status, :only => [:new, :create]
+
+  # This is meant to rescue from race conditions that sometimes occur on user creation
+  # The unique index on login (database level) prevents the duplicate user from being created,
+  # but ideally we can still send the user the activation code and show them the confirmation page
+  rescue_from ActiveRecord::RecordNotUnique do |exception|
+    # ensure we actually have a duplicate user situation
+    if exception.message =~ /Mysql2?::Error: Duplicate entry/i &&
+      @user && User.count(:conditions => {:login => @user.login}) > 0 &&
+      # and that we can find the original, valid user record
+      (@user = User.find_by_login(@user.login))
+        notify_and_show_confirmation_screen
+    else
+      # re-raise the exception and make it catchable by Rails and Airbrake
+      # (see http://www.simonecarletti.com/blog/2009/11/re-raise-a-ruby-exception-in-a-rails-rescue_from-statement/)
+      rescue_action_without_handler(exception)
+    end
+  end
 
   def load_user
     @user = User.find_by_login(params[:id])
@@ -45,6 +62,7 @@ class UsersController < ApplicationController
       flash[:error] = ts("Sorry, could not find this user.")
       redirect_to people_path and return
     end
+    @page_subtitle = @user.login
 
     # very similar to show under pseuds - if you change something here, change it there too
     if current_user.nil?
@@ -82,7 +100,7 @@ class UsersController < ApplicationController
     if current_user.respond_to?(:subscriptions)
       @subscription = current_user.subscriptions.where(:subscribable_id => @user.id,
                                                        :subscribable_type => 'User').first ||
-                      current_user.subscriptions.build
+                      current_user.subscriptions.build(:subscribable => @user)
     end
   end
 
@@ -209,15 +227,20 @@ class UsersController < ApplicationController
         end
       end
       if @user.save
-        UserMailer.signup_notification(@user.id).deliver
-        flash[:notice] = ts("During testing you can activate via <a href='%{activation_url}'>your activation url</a>.",
-                            :activation_url => activate_path(@user.activation_code)) if Rails.env.development?
-        render "confirmation"
+        notify_and_show_confirmation_screen
       else
         params[:use_openid] = true unless openid_url.blank?
         render :action => "new"
       end
     end
+  end
+
+  def notify_and_show_confirmation_screen
+    # deliver synchronously to avoid getting caught in backed-up mail queue
+    UserMailer.signup_notification(@user.id).deliver! 
+    flash[:notice] = ts("During testing you can activate via <a href='%{activation_url}'>your activation url</a>.",
+                        :activation_url => activate_path(@user.activation_code)).html_safe if Rails.env.development?
+    render "confirmation"
   end
 
   def activate
@@ -228,9 +251,10 @@ class UsersController < ApplicationController
       @user = User.find_by_activation_code(params[:id])
       if @user
         if @user.active?
-          flash[:error].now = ts("Your account has already been activated.")
+          flash.now[:error] = ts("Your account has already been activated.")
           redirect_to @user and return
         end
+        # this is just a confirmation and it's ok if it gets delayed
         @user.activate && UserMailer.activation(@user.id).deliver
         flash[:notice] = ts("Signup complete! Please log in.")
         @user.create_log_item( options = {:action => ArchiveConfig.ACTION_ACTIVATE})
@@ -258,16 +282,14 @@ class UsersController < ApplicationController
     end
   end
 
-  # PUT /users/1
-  # PUT /users/1.xml
   def update
     @user.profile.update_attributes(params[:profile_attributes])
-  if @user.profile.save
-    flash[:notice] = ts("Your profile has been successfully updated")
-    render :edit and return
-  else
-    render :edit and return
-  end
+    if @user.profile.save
+      flash[:notice] = ts("Your profile has been successfully updated")
+      redirect_to edit_user_path(@user)
+    else
+      render :edit
+    end
   end
   
   def change_email
@@ -277,19 +299,19 @@ class UsersController < ApplicationController
       if !reauthenticate
         render :change_email and return
       else
-    @old_email = @user.email
-    @user.email = params[:new_email]
-    @new_email = params[:new_email]
-    if @user.save
-      flash[:notice] = ts("Your email has been successfully updated")
-      UserMailer.change_email(@user.id, @old_email, @new_email).deliver
-      @user.create_log_item( options = {:action => ArchiveConfig.ACTION_NEW_EMAIL})
-    else
-      render :change_email and return
+        @old_email = @user.email
+        @user.email = params[:new_email]
+        @new_email = params[:new_email]
+        if @user.save
+          flash[:notice] = ts("Your email has been successfully updated")
+          UserMailer.change_email(@user.id, @old_email, @new_email).deliver
+          @user.create_log_item( options = {:action => ArchiveConfig.ACTION_NEW_EMAIL})
+        else
+          render :change_email and return
+        end
+      end
     end
-    end
-    end
-  render :change_email and return
+    render :change_email and return
   end
 
   # DELETE /users/1

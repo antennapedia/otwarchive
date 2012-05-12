@@ -22,7 +22,7 @@ class CommentsController < ApplicationController
   end
 
   def check_tag_wrangler_access
-    if @commentable.is_a?(Tag)
+    if @commentable.is_a?(Tag) || (@comment && @comment.commentable.is_a?(Tag))
       logged_in_as_admin? || permit?("tag_wrangler") || access_denied
     end
   end
@@ -60,6 +60,7 @@ class CommentsController < ApplicationController
       @commentable = AdminPost.find(params[:admin_post_id])
     elsif params[:tag_id]
       @commentable = Tag.find_by_name(params[:tag_id])
+      @page_subtitle = @commentable.name
     end
   end
 
